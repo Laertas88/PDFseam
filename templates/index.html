@@ -3,112 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assembler des patrons en PDF</title>
-    <style>
-        .preview-grid {
-            display: grid;
-            gap: 5px;
-            margin-top: 20px;
-        }
-        .preview-grid .cell {
-            border: 1px solid black;
-            background-color: lightgray;
-            text-align: center;
-            padding: 10px;
-        }
-    </style>
+    <title>PDF Assembler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://www.paypal.com/sdk/js?client-id=AQTr-ljXZoZsIgaVyaUrPv6DJRBp3W6qngUNky4DWVAmuOzAiRDIqenF1ysSJQjnYdsk5olsJ9z1Tc78&currency=EUR"></script>
 </head>
 <body>
-    <h1>Assembler des patrons de couture en PDF</h1>
-    <form id="uploadForm" enctype="multipart/form-data">
-        <label for="file">Téléversez votre fichier PDF :</label>
-        <input type="file" id="file" name="file" accept=".pdf" required><br><br>
-
-        <label for="rows">Nombre de lignes :</label>
-        <input type="number" id="rows" name="rows" min="1" required><br><br>
-
-        <label for="cols">Nombre de colonnes :</label>
-        <input type="number" id="cols" name="cols" min="1" required><br><br>
-
-        <button type="submit">Assembler</button>
-    </form>
-    <p id="status"></p>
-    <a id="downloadLink" style="display:none;">Télécharger le fichier assemblé</a>
-
     <div>
-        <h2>Prévisualisation du plan de collage</h2>
-        <div id="preview" class="preview-grid"></div>
+        <h1>Conversion de patrons PDF vers projection</h1>
+        <p>Recadrez, organisez et assemblez vos pages PDF en quelques clics.</p>
+
+        <!-- Formulaire de téléversement et génération -->
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div>
+                <label for="email">Votre adresse email :</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div>
+                <label for="file">Téléversez votre fichier PDF :</label>
+                <input type="file" id="file" name="file" accept=".pdf" required>
+            </div>
+            <div>
+                <label for="left_margin">Marge gauche en mm :</label>
+                <input type="text" id="left_margin" name="left_margin" value="0" required>
+            </div>
+            <div>
+                <label for="right_margin">Marge droite en mm :</label>
+                <input type="text" id="right_margin" name="right_margin" value="0" required>
+            </div>
+            <div>
+                <label for="top_margin">Marge supérieure en mm :</label>
+                <input type="text" id="top_margin" name="top_margin" value="0" required>
+            </div>
+            <div>
+                <label for="bottom_margin">Marge inférieure en mm :</label>
+                <input type="text" id="bottom_margin" name="bottom_margin" value="0" required>
+            </div>
+            <div>
+                <label for="rows">Nombre de lignes sur votre grille de découpe :</label>
+                <input type="number" id="rows" name="rows" min="1" required>
+            </div>
+            <div>
+                <label for="cols">Nombre de colonnes sur votre grille de découpe :</label>
+                <input type="number" id="cols" name="cols" min="1" required>
+            </div>
+            <button type="submit" id="assemble-button" class="btn-primary" disabled>Assembler</button>
+        </form>
+
+        <!-- Bouton PayPal -->
+        <div id="paypal-button-container"></div>
+
+        <p id="status"></p>
+        <div id="previewContainer"></div>
+        <a id="downloadLink" style="display:none;">Télécharger le fichier assemblé</a>
     </div>
 
     <script>
         const form = document.getElementById('uploadForm');
-        const status = document.getElementById('status');
-        const downloadLink = document.getElementById('downloadLink');
-        const preview = document.getElementById('preview');
+        const previewContainer = document.getElementById('previewContainer');
+        const emailInput = document.getElementById('email');
         const fileInput = document.getElementById('file');
-        const rowsInput = document.getElementById('rows');
-        const colsInput = document.getElementById('cols');
+        const downloadLink = document.getElementById('downloadLink');
+        const status = document.getElementById('status');
+        const assembleButton = document.getElementById('assemble-button');
 
-        let totalPages = 0;
+        let paymentCompleted = false;
 
-        // Fonction pour mettre à jour la prévisualisation
-        function updatePreview() {
-            const rows = parseInt(rowsInput.value) || 1;
-            const cols = parseInt(colsInput.value) || 1;
-
-            // Nettoyer la grille existante
-            preview.innerHTML = '';
-            preview.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-            preview.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-
-            // Ajouter les cellules
-            for (let i = 0; i < totalPages; i++) {
-                const cell = document.createElement('div');
-                cell.classList.add('cell');
-                cell.textContent = i + 1;
-                preview.appendChild(cell);
-            }
-        }
-
-        // Réagir aux changements de lignes, colonnes ou téléversement
-        rowsInput.addEventListener('input', updatePreview);
-        colsInput.addEventListener('input', updatePreview);
-        fileInput.addEventListener('change', async () => {
-            if (!fileInput.files[0]) return;
-
-            const formData = new FormData();
-            formData.append('file', fileInput.files[0]);
-
-            // Envoyer une requête pour obtenir le nombre de pages
-            const response = await fetch('/preview', {
-                method: 'POST',
-                body: formData,
-            });
-
-            const data = await response.json();
-            if (response.ok) {
-                totalPages = data.totalPages;
-                updatePreview();
-            } else {
-                status.textContent = `Erreur : ${data.error}`;
+        // Vérification de l'email dans la liste blanche
+        emailInput.addEventListener('input', async () => {
+            const email = emailInput.value;
+            try {
+                const response = await fetch(`/validate-email?email=${encodeURIComponent(email)}`);
+                const data = await response.json();
+                if (data.is_whitelisted) {
+                    paymentCompleted = true; // Autoriser l'accès gratuit
+                    assembleButton.disabled = false;
+                    alert("Email validé : accès gratuit activé !");
+                } else {
+                    paymentCompleted = false;
+                    assembleButton.disabled = true;
+                }
+            } catch (err) {
+                console.error("Erreur lors de la validation de l'email :", err);
             }
         });
 
-        form.onsubmit = async (e) => {
-            e.preventDefault();
-            const file = fileInput.files[0];
-            const rows = rowsInput.value;
-            const cols = colsInput.value;
+        // Intégration PayPal
+        paypal.Buttons({
+            createOrder: async () => {
+                const response = await fetch('/create-payment', { method: 'POST' });
+                const data = await response.json();
+                if (data.approval_url) {
+                    return data.approval_url;
+                } else {
+                    throw new Error(data.error || "Erreur lors de la création du paiement.");
+                }
+            },
+            onApprove: async (data) => {
+                const response = await fetch(`/execute-payment?paymentId=${data.paymentID}&PayerID=${data.payerID}`);
+                if (response.ok) {
+                    alert("Paiement réussi !");
+                    paymentCompleted = true;
+                    assembleButton.disabled = false; // Autoriser l'assemblage
+                } else {
+                    alert("Erreur lors de l'exécution du paiement.");
+                }
+            },
+            onCancel: () => {
+                alert("Paiement annulé.");
+            },
+            onError: (err) => {
+                console.error(err);
+                alert("Erreur lors du paiement.");
+            }
+        }).render('#paypal-button-container');
 
-            if (!file || !rows || !cols) {
-                status.textContent = "Veuillez remplir tous les champs.";
+        // Gestion du formulaire
+        const handleSubmit = async (e) => {
+            e.preventDefault();
+
+            if (!paymentCompleted) {
+                alert("Veuillez effectuer le paiement ou valider votre email avant de continuer.");
                 return;
             }
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('rows', rows);
-            formData.append('cols', cols);
+            const formData = new FormData(form);
 
             status.textContent = "Traitement en cours...";
             downloadLink.style.display = "none";
@@ -128,7 +146,7 @@
                 const url = URL.createObjectURL(blob);
 
                 downloadLink.href = url;
-                downloadLink.download = "assembled_" + file.name;
+                downloadLink.download = "assembled.pdf";
                 downloadLink.textContent = "Télécharger le fichier assemblé";
                 downloadLink.style.display = "block";
                 status.textContent = "Traitement terminé !";
@@ -136,6 +154,8 @@
                 status.textContent = `Erreur : ${err.message}`;
             }
         };
+
+        form.addEventListener('submit', handleSubmit);
     </script>
 </body>
 </html>

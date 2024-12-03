@@ -1,0 +1,157 @@
+/* Palette utilisée */
+:root {
+    --dark: #292F36; /* Gunmetal */
+    --turquoise: #4ECDC4; /* Medium Turquoise */
+    --mint: #F7FFF7; /* Mint Cream */
+    --coral: #FF6B6B; /* Bittersweet */
+    --yellow: #FFE66D; /* Yellow Crayola */
+}
+
+/* Général */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: var(--mint);
+    color: var(--dark);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+h1 {
+    font-size: 2rem;
+    color: var(--dark);
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+p {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--dark);
+}
+
+/* Conteneur principal */
+.app-container {
+    background: var(--yellow);
+    border: 2px solid var(--turquoise);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+}
+
+/* Formulaire */
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+form div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+label {
+    font-weight: bold;
+    color: var(--dark);
+}
+
+input, button, select {
+    padding: 10px;
+    border: 2px solid var(--turquoise);
+    border-radius: 8px;
+    font-size: 1rem;
+    background-color: var(--mint);
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--coral);
+    background-color: var(--yellow);
+    box-shadow: 0 0 4px var(--coral);
+}
+
+/* Boutons */
+button {
+    background-color: var(--coral);
+    color: var(--mint);
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    border-radius: 8px;
+}
+
+button:hover {
+    background-color: var(--dark);
+    color: var(--mint);
+    transform: translateY(-2px);
+}
+
+button:disabled {
+    background-color: var(--turquoise);
+    color: var(--dark);
+    cursor: not-allowed;
+}
+
+/* Lien pour le téléchargement */
+#downloadLink {
+    text-align: center;
+    display: block;
+    background-color: var(--turquoise);
+    color: var(--dark);
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 8px;
+    margin-top: 1rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    border: 2px solid var(--dark);
+}
+
+#downloadLink:hover {
+    background-color: var(--dark);
+    color: var(--mint);
+}
+
+/* Aperçu de la grille */
+.preview-container {
+    display: grid;
+    gap: 5px;
+    margin-top: 1rem;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--mint);
+    padding: 10px;
+    border-radius: 8px;
+    border: 2px dashed var(--turquoise);
+}
+
+.preview-container div {
+    background-color: var(--yellow);
+    border: 1px solid var(--turquoise);
+    border-radius: 4px;
+    width: 50px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--dark);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Statut */
+#status {
+    text-align: center;
+    font-weight: bold;
+    margin-top: 1rem;
+    color: var(--coral);
+}
