@@ -173,34 +173,29 @@ def assemble_cropped_pages(cropped_pages, output_path, rows, cols):
 
 @app.route('/create-payment', methods=['POST'])
 def create_payment():
-    payment = paypalrestsdk.Payment({
-        "intent": "sale",
-        "payer": {"payment_method": "paypal"},
-        "redirect_urls": {
-            "return_url": "http://127.0.0.1:8080/execute-payment",
-            "cancel_url": "http://127.0.0.1:8080/cancel",
-        },
-        "transactions": [{
-            "item_list": {
-                "items": [{
-                    "name": "Génération de PDF",
-                    "sku": "001",
-                    "price": "0.20",
-                    "currency": "EUR",
-                    "quantity": 1
-                }]
+    try:
+        payment = paypalrestsdk.Payment({
+            "intent": "sale",
+            "payer": {"payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": "https://pdfseam.onrender.com/payment/execute",
+                "cancel_url": "https://pdfseam.onrender.com/payment/cancel"
             },
-            "amount": {"total": "1.00", "currency": "EUR"},
-            "description": "Paiement pour la génération de PDF."
-        }]
-    })
+            "transactions": [{
+                "amount": {"total": "0.20", "currency": "USD"},
+                "description": "Paiement pour le traitement du PDF"
+            }]
+        })
 
-    if payment.create():
-        for link in payment.links:
-            if link.rel == "approval_url":
-                return jsonify({"approval_url": link.href})
-    else:
-        return jsonify({"error": payment.error}), 500
+        if payment.create():
+            return jsonify({'approval_url': payment.links[1].href})
+        else:
+            print(f"Erreur PayPal : {payment.error}")  # Log l'erreur PayPal
+            return jsonify({"error": payment.error}), 500
+    except Exception as e:
+        print(f"Erreur inattendue : {str(e)}")  # Log l'erreur inattendue
+        return jsonify({"error": f"Erreur lors du paiement : {str(e)}"}), 500
+
 
 
 @app.route('/execute-payment', methods=['GET'])
